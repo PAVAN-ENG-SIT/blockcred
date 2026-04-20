@@ -1,0 +1,5 @@
+fastapi>=0.136.0
+uvicorn[standard]>=0.44.0
+pydantic>=2.9.0
+supabase
+web3

@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from app.api.routes import issue, verify, anchor
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI(
     title="ZeroCert Enterprise API",
@@ -12,6 +14,14 @@ app.include_router(issue.router, prefix="/api/v1")
 app.include_router(verify.router, prefix="/api/v1") 
 app.include_router(anchor.router, prefix="/api/v1")
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all (for dev)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 @app.get("/health", tags=["System"])
 def health_check():
     """Simple check to ensure the server is running."""

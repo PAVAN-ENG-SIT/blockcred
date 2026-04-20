@@ -47,14 +47,17 @@ class AnchoringService:
         # Calculate the Root
         merkle_root = self._build_merkle_root(self.pending_hashes.copy())
         
+        # Ensure we don't accidentally return 0x0x by stripping any existing prefix
+        clean_root = merkle_root.replace("0x", "")
+        
         # In Phase 2, this is where we will use Web3.py to send this root to Polygon!
-        print(f"💎 [POLYGON STUB] Sending Merkle Root to Smart Contract: 0x{merkle_root}")
+        print(f"💎 [POLYGON STUB] Sending Merkle Root to Smart Contract: 0x{clean_root}")
         
         # Clear the queue for the next batch
         self.pending_hashes.clear()
         
         return {
             "status": "Batch anchored successfully",
-            "merkle_root": f"0x{merkle_root}",
+            "merkle_root": f"0x{clean_root}",
             "certificates_anchored": len(self.pending_hashes) # Will show 0 because we just cleared it, but logically it's the batch size
         }

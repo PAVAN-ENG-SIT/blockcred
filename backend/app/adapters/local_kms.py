@@ -7,6 +7,7 @@ from app.core.exceptions import KeyNotFoundError # Implements Fix 6 (Strict Erro
 
 class LocalKMS(BaseKMS):
     def __init__(self):
+        self._keys = {}
         # In a real system, this loads from an encrypted local file.
         # For Phase 1 runtime, we store keys in a simulated memory vault.
         self._vault = {}
@@ -48,17 +49,19 @@ class LocalKMS(BaseKMS):
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
         return public_bytes.decode('utf-8')
-    def verify_signature(self, payload_hash: str, signature_hex: str, key_id: str) -> bool:
+    def verify_signature(self, payload_hash: str, signature_b64: str, key_id: str) -> bool:
         from cryptography.exceptions import InvalidSignature
+        import base64
         
-        if key_id not in self._keys:
-            return False # Key doesn't exist
+        if key_id not in self._vault:
+            print(f"⚠️ Verification failed: Key {key_id} not found in memory (did the server restart?).")
+            return False 
             
-        public_key = self._keys[key_id].public_key()
+        public_key = self._vault[key_id]["public"]
         try:
             public_key.verify(
-                bytes.fromhex(signature_hex),
-                bytes.fromhex(payload_hash)
+                base64.b64decode(signature_b64),
+                payload_hash.encode('utf-8')
             )
             return True
         except InvalidSignature:
