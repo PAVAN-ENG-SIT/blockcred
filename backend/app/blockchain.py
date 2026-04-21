@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 1. Load your secrets
-RPC_URL = os.getenv("POLYGON_RPC_URL")
-PRIVATE_KEY = os.getenv("ADMIN_PRIVATE_KEY")
+RPC_URL = os.getenv("RPC_URL")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS")
 
 # 2. Paste your entire ABI list here
@@ -151,26 +151,42 @@ CONTRACT_ABI=[
   }
 ]
 
-# 3. Connect to Polygon Amoy
-w3 = Web3(Web3.HTTPProvider(RPC_URL))
-# CRITICAL: Polygon requires this middleware to process blocks correctly
-w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+if not RPC_URL or not PRIVATE_KEY or not CONTRACT_ADDRESS:
+    print("⚠️ Blockchain ENV missing, skipping init")
+    w3 = None
+    contract = None
+    account = None
+else:
+    RPC_URL = RPC_URL.strip()
+    PRIVATE_KEY = PRIVATE_KEY.strip()
+    CONTRACT_ADDRESS = CONTRACT_ADDRESS.strip()
 
-# 4. Initialize the Contract
-checksum_address = Web3.to_checksum_address(CONTRACT_ADDRESS)
-contract = w3.eth.contract(address=checksum_address, abi=CONTRACT_ABI)
-account = w3.eth.account.from_key(PRIVATE_KEY)
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+
+    checksum_address = Web3.to_checksum_address(CONTRACT_ADDRESS)
+    contract = w3.eth.contract(address=checksum_address, abi=CONTRACT_ABI)
+    account = w3.eth.account.from_key(PRIVATE_KEY)
 
 def anchor_root_to_blockchain(merkle_root_hex: str):
     """
     Takes a Merkle Root (e.g., '0x123abc...') and permanently saves it to Polygon.
     """
+    if not w3 or not contract or not account:
+        raise Exception("Blockchain not initialized properly")
+
+    if not w3.is_connected():
+        raise Exception("❌ Failed to connect to blockchain")
+
+    if not w3 or not contract or not account:
+        raise Exception("Blockchain not initialized properly")
+
     print(f"Anchoring root to blockchain: {merkle_root_hex}")
     
-    # Get the current transaction count for your wallet (the 'nonce')
+    # Get nonce
     nonce = w3.eth.get_transaction_count(account.address)
 
-# 1. Build the transaction
+    # 1. Build transaction
     transaction = contract.functions.anchorRoot(merkle_root_hex).build_transaction({
         'chainId': 80002, 
         'gas': 100000,  
@@ -178,19 +194,22 @@ def anchor_root_to_blockchain(merkle_root_hex: str):
         'maxPriorityFeePerGas': w3.to_wei('150', 'gwei'),
         'nonce': nonce,
     })
-    # 2. Sign the transaction with your Private Key
+
+    # 2. Sign
     signed_txn = w3.eth.account.sign_transaction(transaction, private_key=PRIVATE_KEY)
 
-    # 3. Send it to the network!
+    # 3. Send
     print("Sending transaction...")
     tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
     
-    # 4. Wait for the block to be mined (this pauses Python for ~5-10 seconds)
+    # 4. Wait
     print("Waiting for network confirmation...")
     tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
     print(f"✅ Success! Root anchored in block {tx_receipt.blockNumber}")
     return w3.to_hex(tx_hash)
+
+
 
 # --- QUICK TEST RUN ---
 if __name__ == "__main__":
