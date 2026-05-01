@@ -542,9 +542,9 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 ## 👤 Author
 
-**Pavan Das**
+**Pavan Teja**
 
-Built with 🔥 at BIT Hackathon
+Built with 🔥 at SIT Hackathon
 
 ---
 
