@@ -200,7 +200,7 @@ Academic credential fraud is a **$7 billion problem** globally. Forged degrees, 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/blockcred.git
+git clone https://github.com/PAVAN-ENG-SIT/blockcred.git
 cd blockcred
 ```
 
